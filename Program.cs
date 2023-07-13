@@ -102,11 +102,11 @@ public class Grid {
                 testLife = (Monster)obstacle[k];
                 if (testLife.alive) {
                     IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
-                    // consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                    consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
                 }
             } else {
                 IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
-                // consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
             }
         }
 
@@ -514,9 +514,7 @@ public class Entrance : IObstacle {
     public Coordinate coord { get; set; }
     public void Sense() { }
     public void Action(Player player) {
-        if (player.activateFount) {
-            ColorWriter.ColorWriteLine("The fountain has been activated and you have escaped with your life!", ConsoleColor.Yellow);
-        } else if (!player.activateFount) {
+        if (!player.activateFount) {
             ColorWriter.ColorWriteLine("You see light in this room coming from outside the cavern. This is the entrance.", ConsoleColor.White);
         }
     }
