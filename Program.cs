@@ -14,6 +14,8 @@ public class Game {
 
         CheckGrid checkGrid = new CheckGrid(player);
 
+        player.nightVision = true;
+
         while (player.alive && !player.hasWon) {
             Console.Clear();
 
@@ -104,11 +106,13 @@ public class Grid {
                 testLife = (Monster)obstacle[k];
                 if (testLife.alive) {
                     IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
-                    // consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                    if (player.nightVision)
+                        consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
                 }
             } else {
                 IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
-                // consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                if (player.nightVision)
+                    consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
             }
         }
 
@@ -197,6 +201,25 @@ public class CheckGrid {
             }
         }
 
+        // check if a maelstrom has landed on another object's location. Kill it if it has.
+        for (int i = 0; i < Obstacles.Length; i++) {
+            if (Obstacles[i] is Maelstrom) {
+                Maelstrom testLife = (Maelstrom)Obstacles[i];
+                if (testLife.alive) {
+                    for (int j = 0; j < Obstacles.Length; j++) {
+                        if (j != i) {
+                            if (Obstacles[i].coord.col == Obstacles[j].coord.col && Obstacles[i].coord.row == Obstacles[j].coord.row) {
+                                testLife.alive = false;
+                                Obstacles[i] = testLife;
+                                ColorWriter.ColorWriteLine("A Maelstrom has died...", ConsoleColor.DarkRed);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         for (int i = 0; i < Obstacles.Length; i++) {
             if (IsAdjacent(Player.coord, Obstacles[i].coord)) {
                 Obstacles[i].Sense();
@@ -234,6 +257,7 @@ public class Player {
     public bool alive { get; set; } = true;
     public bool hasWon { get; set; } = false;
     public bool activateFount { get; set; } = false;
+    public bool nightVision { get; set; } 
     public int moveNum { get; set; } = 0;
     public int maxMove { get; set; } = 6;
     public int numArrows { get; set; } = 5;
@@ -246,6 +270,7 @@ public class Player {
         foreach (PlayerCommand? command in Command) {
             command?.Run(this);
         }
+        Array.Clear(Command, 0, Command.Length);
         moveNum++;
     }
     public char Icon() {
@@ -462,11 +487,19 @@ public class Maelstrom : Monster {
         if (this.alive) {
             ColorWriter.ColorWriteLine("You have encountered a maelstrom and have been swept away to another room!", ConsoleColor.Cyan);
             Coordinate coordM = this.coord;
-            new NorthCommand();
-            new NorthCommand();
-            new WestCommand();
-            new WestCommand();
-            player.Run();
+            Coordinate coordP = player.coord;
+            coordP.row += 2;
+            if (coordP.row > player.maxMove) { 
+                coordP.row = player.maxMove - 1;
+            } else if (coordP.row < 0) {
+                coordP.row = 0;
+            }
+            coordP.col += 2;
+            if (coordP.col > player.maxMove) {
+                coordP.col = player.maxMove - 1;
+            } else if (coordP.col < 0) {
+                coordP.col = 0;
+            }
             coordM.row -= 2;
             if (coordM.row >= player.maxMove) {
                 coordM.row = player.maxMove - 1;
@@ -481,6 +514,7 @@ public class Maelstrom : Monster {
             }
 
             this.coord = coordM;
+            player.coord = coordP;
         }
     }
     public override char Icon() {
