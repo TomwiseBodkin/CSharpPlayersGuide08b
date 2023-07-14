@@ -34,7 +34,7 @@ public class Game {
                 's' => new SouthCommand(),
                 'a' => new WestCommand(),
                 'd' => new EastCommand(),
-                'e' => new EnableCommand(),
+                'e' => new EnableCommand(checkGrid.Obstacles[1]),
                 'x' => new ShootArrow(checkGrid.Obstacles),
                 'k' => new KillCommand(),
                 'h' => new HelpCommand(),
@@ -66,6 +66,8 @@ public class Grid {
             while (!int.TryParse(pickerStr, out pick)) {
                 ColorWriter.ColorWrite("Your choice (1-3): ", ConsoleColor.White);
                 pickerStr = Console.ReadLine();
+                if (pickerStr == "")
+                    pickerStr = "3";
             }
         } while (pick < 1 || pick > 3);
 
@@ -231,7 +233,6 @@ public record struct Coordinate(int row, int col);
 public class Player {
     public bool alive { get; set; } = true;
     public bool hasWon { get; set; } = false;
-    public bool foundFount { get; set; } = false;
     public bool activateFount { get; set; } = false;
     public int moveNum { get; set; } = 0;
     public int maxMove { get; set; } = 6;
@@ -343,13 +344,20 @@ public class KillCommand : PlayerCommand {
 }
 
 public class EnableCommand : PlayerCommand {
+    IObstacle obstacle { get; }
+    public EnableCommand(IObstacle obstacle) {
+        this.obstacle = obstacle;
+    }
+
     public override void Run(Player player) {
-        if (player.alive && player.foundFount) {
-            player.activateFount = true;
-        } else {
-            Console.WriteLine("You cannot do that until you find the fountain...");
-            Console.WriteLine("Press any key...");
-            Console.ReadKey();
+        if (player.alive && !player.activateFount) {
+            if (player.coord.row == obstacle.coord.row && player.coord.col == obstacle.coord.col) {
+                player.activateFount = true;
+            } else {
+                Console.WriteLine("You can only do that at the fountain...");
+                Console.WriteLine("Press any key...");
+                Console.ReadKey();
+            }
         }
     }
 }
@@ -539,7 +547,6 @@ public class Fountain : IObstacle {
             ColorWriter.ColorWriteLine("You hear the rushing waters from the fountain. It has been reactivated!", ConsoleColor.Blue);
         } else if (!player.activateFount) {
             ColorWriter.ColorWriteLine("You hear water dripping in this room. The fountain is here!", ConsoleColor.DarkCyan);
-            player.foundFount = true;
         }
     }
     public char Icon() {
@@ -575,21 +582,26 @@ public class Amarok : Monster {
 
 public static class Instructions {
     public static void Printout () {
-        Console.WriteLine("You enter the Cavern of Objects, a maze filled with dangerous pits, in search");
-        Console.WriteLine("of the Fountain of Objects.");
-        Console.WriteLine("Light is visible only in the entrance, and no other light is seen anywhere in the caverns.");
-        Console.WriteLine("You must navigate the Caverns with your other senses.");
-        Console.WriteLine("Find the Fountain of Objects, activate it, and return to the entrance.");
-        Console.WriteLine("Look out for pits. You will feel a breeze if a pit is in an adjacent room. If you");
-        Console.WriteLine("enter a room with a pit, you will die.");
-        Console.WriteLine("Maelstroms are violent forces of sentient wind. Entering a room with one could transport");
-        Console.WriteLine("you to any other location in the caverns. You will be able to hear their growling and");
-        Console.WriteLine("groaning in nearby rooms.");
-        Console.WriteLine("Amaroks roam the caverns. Encountering one is certain death, but they stink and can be");
-        Console.WriteLine("smelled in nearby rooms.");
-        // Console.WriteLine("You carry with you a bow and a quiver of arrows. You can use them to shoot monsters in the");
-        // Console.WriteLine("caverns but be warned: you have a limited supply.");
-        Console.WriteLine("");
+        string instOut = """
+        You enter the Cavern of Objects, a maze filled with dangerous pits and monsters, in search of 
+        the Fountain of Objects. Light is visible only in the entrance, and no other light is seen 
+        anywhere in the caverns. You must navigate the Caverns with your other senses.
+        Find the Fountain of Objects, activate it, and return to the entrance!
+
+        Look out for pits. You will feel a breeze if a pit is in an adjacent room. If you
+        enter a room with a pit, you will die.
+        
+        Maelstroms are violent forces of sentient wind. Entering a room with one could transport
+        you to any other location in the caverns. You will be able to hear their growling and
+        groaning in nearby rooms.
+        
+        Amaroks roam the caverns. Encountering one is certain death, but they stink and can be
+        smelled in nearby rooms.
+        
+        You carry with you a bow and a quiver of arrows. You can use them to shoot monsters in the
+        caverns but be warned: you have a limited supply.
+        """;
+        ColorWriter.ColorWriteLine(instOut, ConsoleColor.Yellow);
     }
 }
 
