@@ -27,7 +27,7 @@ public class Game {
             ColorWriter.ColorWriteLine($"Type a key to issue a command ->\n w: north, a: west, s: south, d: east,\n e: enable fountain, x: shoot an arrow, q: quit, h: help", ConsoleColor.White);
 
             do {
-                inKey = Console.ReadKey().KeyChar;
+                inKey = Console.ReadKey(true).KeyChar;
             } while (!"wasdqehx".Contains(inKey));
             player.Command[0] = inKey switch {
                 'w' => new NorthCommand(),
@@ -288,7 +288,7 @@ public class NorthCommand : PlayerCommand {
                 player.coord = coord2;
             } else {
                 Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey();
+                Console.ReadKey(true);
             }
         }
     }
@@ -302,7 +302,7 @@ public class SouthCommand : PlayerCommand {
                 player.coord = coord2;
             } else {
                 Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey();
+                Console.ReadKey(true);
             }
         }
     }
@@ -316,7 +316,7 @@ public class EastCommand : PlayerCommand {
                 player.coord = coord2;
             } else {
                 Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey();
+                Console.ReadKey(true);
             }
         }
     }
@@ -330,7 +330,7 @@ public class WestCommand : PlayerCommand {
                 player.coord = coord2;
             } else {
                 Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey();
+                Console.ReadKey(true);
             }
         }
     }
@@ -356,7 +356,7 @@ public class EnableCommand : PlayerCommand {
             } else {
                 Console.WriteLine("You can only do that at the fountain...");
                 Console.WriteLine("Press any key...");
-                Console.ReadKey();
+                Console.ReadKey(true);
             }
         }
     }
@@ -367,7 +367,7 @@ public class HelpCommand : PlayerCommand {
         Console.Clear();
         Instructions.Printout();
         ColorWriter.ColorWriteLine("Press any key...", ConsoleColor.Cyan);
-        Console.ReadKey();
+        Console.ReadKey(true);
     }
 }
 public class ShootArrow : PlayerCommand {
@@ -382,10 +382,9 @@ public class ShootArrow : PlayerCommand {
             int hitIndex = -1;
             ColorWriter.ColorWriteLine($"Type a key to pick a direction to shoot -> w: north, a: west, s: south, d: east", ConsoleColor.White);
             player.numArrows--;
-            Console.WriteLine(obstacle[0].ToString());
 
             do {
-                inKey = Console.ReadKey().KeyChar;
+                inKey = Console.ReadKey(true).KeyChar;
             } while (!"wasd".Contains(inKey));
             switch (inKey) {
                 case 'w':
@@ -433,19 +432,19 @@ public class ShootArrow : PlayerCommand {
                     testLife.alive = false;
                     obstacle[hitIndex] = testLife;
                     ColorWriter.ColorWriteLine($"You killed a {obstacle[hitIndex].GetType()}", ConsoleColor.Magenta);
-                    Console.ReadKey();
+                    Console.ReadKey(true);
                 } else {
                     ColorWriter.ColorWriteLine("Your arrow flies down into a deep pit", ConsoleColor.DarkCyan);
-                    Console.ReadKey();
+                    Console.ReadKey(true);
                 }
             } else {
                 ColorWriter.ColorWriteLine("Your arrow flies off into the darkness...",ConsoleColor.DarkCyan);
-                Console.ReadKey();
+                Console.ReadKey(true);
             }
 
         } else {
             ColorWriter.ColorWriteLine("You are out of arrows! (press any key)", ConsoleColor.DarkBlue);
-            Console.ReadKey();
+            Console.ReadKey(true);
         }
     }
 }
