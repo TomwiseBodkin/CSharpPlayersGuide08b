@@ -104,11 +104,11 @@ public class Grid {
                 testLife = (Monster)obstacle[k];
                 if (testLife.alive) {
                     IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
-                    consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                    // consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
                 }
             } else {
                 IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
-                consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                // consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
             }
         }
 
