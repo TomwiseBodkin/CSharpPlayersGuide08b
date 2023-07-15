@@ -416,8 +416,13 @@ public class ShootArrow : PlayerCommand {
                     Console.WriteLine("You fire an arrow to the north");
                     for (int i = 0; i < obstacle.Length; i++) { 
                         if (player.coord.col == obstacle[i].coord.col && player.coord.row - obstacle[i].coord.row == 1) {
-                            hitIndex = i;
-                            break;
+                            if (obstacle[i] is Monster) {
+                                testLife = (Monster)obstacle[i];
+                                if (testLife.alive) {
+                                    hitIndex = i;
+                                    break;
+                                }
+                            }
                         }
                     }
                     break;
@@ -425,8 +430,13 @@ public class ShootArrow : PlayerCommand {
                     Console.WriteLine("You fire an arrow to the west");
                     for (int i = 0; i < obstacle.Length; i++) {
                         if (player.coord.row == obstacle[i].coord.row && player.coord.col - obstacle[i].coord.col == 1) {
-                            hitIndex = i;
-                            break;
+                            if (obstacle[i] is Monster) {
+                                testLife = (Monster)obstacle[i];
+                                if (testLife.alive) {
+                                    hitIndex = i;
+                                    break;
+                                }
+                            }
                         }
                     }
                     break;
@@ -434,8 +444,13 @@ public class ShootArrow : PlayerCommand {
                     Console.WriteLine("You fire an arrow to the south");
                     for (int i = 0; i < obstacle.Length; i++) {
                         if (player.coord.col == obstacle[i].coord.col && player.coord.row - obstacle[i].coord.row == -1) {
-                            hitIndex = i;
-                            break;
+                            if (obstacle[i] is Monster) {
+                                testLife = (Monster)obstacle[i];
+                                if (testLife.alive) {
+                                    hitIndex = i;
+                                    break;
+                                }
+                            }
                         }
                     }
                     break;
@@ -443,8 +458,13 @@ public class ShootArrow : PlayerCommand {
                     Console.WriteLine("You fire an arrow to the east");
                     for (int i = 0; i < obstacle.Length; i++) {
                         if (player.coord.row == obstacle[i].coord.row && player.coord.col - obstacle[i].coord.col == -1) {
-                            hitIndex = i;
-                            break;
+                            if (obstacle[i] is Monster) {
+                                testLife = (Monster)obstacle[i];
+                                if (testLife.alive) {
+                                    hitIndex = i;
+                                    break;
+                                }
+                            }
                         }
                     }
                     break;
@@ -489,13 +509,13 @@ public class Maelstrom : Monster {
             Coordinate coordM = this.coord;
             Coordinate coordP = player.coord;
             coordP.row += 2;
-            if (coordP.row > player.maxMove) { 
+            if (coordP.row >= player.maxMove) { 
                 coordP.row = player.maxMove - 1;
             } else if (coordP.row < 0) {
                 coordP.row = 0;
             }
             coordP.col += 2;
-            if (coordP.col > player.maxMove) {
+            if (coordP.col >= player.maxMove) {
                 coordP.col = player.maxMove - 1;
             } else if (coordP.col < 0) {
                 coordP.col = 0;
