@@ -120,22 +120,29 @@ public class Grid {
         IconLocations[player.coord.col, player.coord.row] = player.Icon();
         consoleColors[player.coord.col, player.coord.row] = player.Color();
 
-        DrawLine();
+        DrawLine(true);
         for (int i = 0; i < gridSize; i++) {
-            Console.Write("|");
+            Console.Write("\u2502");
             for (int j = 0; j < gridSize; j++) {
                 ColorWriter.ColorWrite($" {IconLocations[j, i]} ", consoleColors[j, i]);
             }
-            Console.WriteLine("|");
+            Console.WriteLine("\u2502");
         }
-        DrawLine();
+        DrawLine(false);
     }
 
-    public void DrawLine() {
+    public void DrawLine(bool top) {
+        if (top)
+            Console.Write("\u250c");
+        else
+            Console.Write("\u2514");
         for (int i = 0; i < gridSize; i++) {
-            Console.Write("---");
+            Console.Write("\u2500\u2500\u2500");
         }
-        Console.WriteLine("--");
+        if (top)
+            Console.WriteLine("\u2510");
+        else
+            Console.WriteLine("\u2518");
     }
 }
 
