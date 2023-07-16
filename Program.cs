@@ -8,40 +8,41 @@
 public class Game {
     public void Run() {
         char inKey; // movement input key
+        int FountInt;
 
         Coordinate pCoord = new Coordinate(0,0);
         Player player = new Player(pCoord);
 
         CheckGrid checkGrid = new CheckGrid(player);
 
-        player.nightVision = true;
+        player.nightVision = true; // 'true' to allow ability to see obstacles for testing
 
         while (player.alive && !player.hasWon) {
             Console.Clear();
 
+            ColorWriter.ColorWriteLine($"You are in the room at [{player.coord.col},{player.coord.row}]. You have {player.numArrows} arrows.", ConsoleColor.Cyan);
             checkGrid.grid.DrawArray(player, checkGrid.Obstacles);
-            Console.WriteLine($"You are in the room at [{player.coord.row},{player.coord.col}]. You have {player.numArrows} arrows.");
 
             if (!checkGrid.CheckSurroundings()) { 
                 continue; 
             }
+            FountInt = checkGrid.Obstacles.FindIndex(r => r is Fountain);
 
             ColorWriter.ColorWriteLine($"Type a key to issue a command ->\n w: north, a: west, s: south, d: east,\n e: enable fountain, x: shoot an arrow, q: quit, h: help", ConsoleColor.White);
 
             do {
                 inKey = Console.ReadKey(true).KeyChar;
             } while (!"wasdqehx".Contains(inKey));
-            player.Command[0] = inKey switch {
-                'w' => new NorthCommand(),
-                's' => new SouthCommand(),
-                'a' => new WestCommand(),
-                'd' => new EastCommand(),
-                'e' => new EnableCommand(checkGrid.Obstacles[1]),
-                'x' => new ShootArrow(checkGrid.Obstacles),
-                'k' => new KillCommand(),
-                'h' => new HelpCommand(),
-                 _ => new KillCommand()
-            };
+            if (player.Command is not null) {
+                player.Command.Add(inKey switch {
+                    _ when inKey == 'w' || inKey == 'a' || inKey == 's' || inKey == 'd' => new MoveCommand(inKey),
+                    'e' => new EnableCommand(checkGrid.Obstacles[FountInt]),
+                    'x' => new ShootArrow(checkGrid.Obstacles),
+                    'q' => new KillCommand(),
+                    'h' => new HelpCommand(),
+                    _ => new KillCommand()
+                });
+            }
             player.Run();
             Console.WriteLine("");
         }
@@ -89,41 +90,41 @@ public class Grid {
         }
         Console.Clear();
     }
-    public void DrawArray(Player player, IObstacle[] obstacle) {
+    public void DrawArray(Player player, List<IObstacle> obstacle) {
         char[,] IconLocations = new char[gridSize,gridSize];
         Monster testLife;
         ConsoleColor[,] consoleColors = new ConsoleColor[gridSize,gridSize]; 
 
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
-                IconLocations[i, j] = ' ';
-                consoleColors[i, j] = ConsoleColor.Black;
+                IconLocations[j, i] = ' ';
+                consoleColors[j, i] = ConsoleColor.Black;
             }
         }
 
-        for (int k = 0; k < obstacle.Length; k++) {
+        for (int k = 0; k < obstacle.Count; k++) {
             if (obstacle[k] is Monster) {
                 testLife = (Monster)obstacle[k];
                 if (testLife.alive) {
-                    IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
+                    IconLocations[obstacle[k].coord.col, obstacle[k].coord.row] = obstacle[k].Icon();
                     if (player.nightVision)
-                        consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                        consoleColors[obstacle[k].coord.col, obstacle[k].coord.row] = obstacle[k].Color();
                 }
             } else {
-                IconLocations[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Icon();
+                IconLocations[obstacle[k].coord.col, obstacle[k].coord.row] = obstacle[k].Icon();
                 if (player.nightVision)
-                    consoleColors[obstacle[k].coord.row, obstacle[k].coord.col] = obstacle[k].Color();
+                    consoleColors[obstacle[k].coord.col, obstacle[k].coord.row] = obstacle[k].Color();
             }
         }
 
-        IconLocations[player.coord.row, player.coord.col] = player.Icon();
-        consoleColors[player.coord.row, player.coord.col] = player.Color();
+        IconLocations[player.coord.col, player.coord.row] = player.Icon();
+        consoleColors[player.coord.col, player.coord.row] = player.Color();
 
         DrawLine();
         for (int i = 0; i < gridSize; i++) {
             Console.Write("|");
             for (int j = 0; j < gridSize; j++) {
-                ColorWriter.ColorWrite($" {IconLocations[i, j]} ", consoleColors[i, j]);
+                ColorWriter.ColorWrite($" {IconLocations[j, i]} ", consoleColors[j, i]);
             }
             Console.WriteLine("|");
         }
@@ -141,7 +142,7 @@ public class Grid {
 public class CheckGrid {
     public Grid grid { get; }
     public Player Player { get; }
-    public IObstacle[] Obstacles { get; }
+    public List<IObstacle> Obstacles { get; }
 
     public CheckGrid(Player player) {
         Grid grid = new Grid();
@@ -156,18 +157,19 @@ public class CheckGrid {
         Coordinate coordinate;
 
         Player = player;
-        IObstacle[] _Obstacles = new IObstacle[grid.gridSize + 3];
+        List<IObstacle> _Obstacles = new List<IObstacle>();
         coordinate = new Coordinate(0,0);
-        _Obstacles[0] = new Entrance(coordinate);
+        _Obstacles.Add(new Entrance(coordinate));
         coordinate = new Coordinate(random.Next(grid.gridSize / 2, grid.gridSize), random.Next(grid.gridSize / 2, grid.gridSize));
-        _Obstacles[1] = new Fountain(coordinate);
-        for (int i = 2; i < _Obstacles.Length; i++) {
+        _Obstacles.Add(new Fountain(coordinate));
+        for (int i = 2; i < grid.gridSize+2; i++) {
                 repeat = false;
             do {
                 // Initialize locations of obstacles: Maelstrom, Amarok, Pit
+                // ensure they are not created at the same space
                 coordinate = new Coordinate(random.Next(grid.gridSize), random.Next(grid.gridSize));
                 for (int j = 0; j < i; j++) {
-                    repeat = (coordinate.row == _Obstacles[j].coord.row && coordinate.col == _Obstacles[j].coord.col);
+                    repeat = (coordinate.col == _Obstacles[j].coord.col && coordinate.row == _Obstacles[j].coord.row);
                     if (repeat) {
                         break;
                     }
@@ -175,13 +177,13 @@ public class CheckGrid {
             } while (repeat);
             switch (values.GetValue(random.Next(values.Length))) {
                 case Impediments.Maelstrom:
-                    _Obstacles[i] = new Maelstrom(coordinate);
+                    _Obstacles.Add(new Maelstrom(coordinate));
                     break;
                 case Impediments.Amarok:
-                    _Obstacles[i] = new Amarok(coordinate);
+                    _Obstacles.Add(new Amarok(coordinate));
                     break;
                 case Impediments.Pit:
-                    _Obstacles[i] = new Pit(coordinate);
+                    _Obstacles.Add(new Pit(coordinate));
                     break;
                 default:
                     break;
@@ -193,25 +195,25 @@ public class CheckGrid {
     }
 
     public bool CheckSurroundings() {
-        if (Player.moveNum > 0) {
-            if (SamePoint(Player.coord, Obstacles[0].coord) && Player.activateFount) {
-                ColorWriter.ColorWriteLine("The fountain has been activated and you have escaped with your life!", ConsoleColor.Blue);
-                Player.hasWon = true;
-                return false;
-            }
+        int EntInt = Obstacles.FindIndex(r => r is Entrance);
+
+        if (SamePoint(Player.coord, Obstacles[EntInt].coord) && Player.activateFount) {
+            ColorWriter.ColorWriteLine("The fountain has been activated and you have escaped with your life!", ConsoleColor.Blue);
+            Player.hasWon = true;
+            return false;
         }
 
         // check if a maelstrom has landed on another object's location. Kill it if it has.
-        for (int i = 0; i < Obstacles.Length; i++) {
+        for (int i = 0; i < Obstacles.Count; i++) {
             if (Obstacles[i] is Maelstrom) {
                 Maelstrom testLife = (Maelstrom)Obstacles[i];
                 if (testLife.alive) {
-                    for (int j = 0; j < Obstacles.Length; j++) {
+                    for (int j = 0; j < Obstacles.Count; j++) {
                         if (j != i) {
                             if (Obstacles[i].coord.col == Obstacles[j].coord.col && Obstacles[i].coord.row == Obstacles[j].coord.row) {
-                                testLife.alive = false;
-                                Obstacles[i] = testLife;
-                                ColorWriter.ColorWriteLine("A Maelstrom has died...", ConsoleColor.DarkRed);
+                                ColorWriter.ColorWriteLine($"A Maelstrom has died at [{Obstacles[i].coord.col.ToString()},{Obstacles[i].coord.row.ToString()}]", ConsoleColor.DarkRed);
+                                ColorWriter.ColorWriteLine($"Killed by a {Obstacles[j].ToString()}", ConsoleColor.DarkRed);
+                                Obstacles.RemoveAt(i);
                                 break;
                             }
                         }
@@ -220,12 +222,14 @@ public class CheckGrid {
             }
         }
 
-        for (int i = 0; i < Obstacles.Length; i++) {
+        for (int i = 0; i < Obstacles.Count; i++) {
             if (IsAdjacent(Player.coord, Obstacles[i].coord)) {
                 Obstacles[i].Sense();
             }
             if (SamePoint(Player.coord, Obstacles[i].coord)) {
                 Obstacles[i].Action(Player);
+                if (Obstacles[i] is Maelstrom)
+                    return false;
             }
         }
         if (!Player.alive) { 
@@ -243,7 +247,7 @@ public class CheckGrid {
         return false;
     }
     public bool SamePoint(Coordinate coord1, Coordinate coord2) {
-        if (coord1.row == coord2.row && coord1.col == coord2.col) {
+        if (coord1.col == coord2.col && coord1.row == coord2.row) {
             return true;
         }
         return false;
@@ -251,27 +255,30 @@ public class CheckGrid {
 
 }
 
-public record struct Coordinate(int row, int col);
+public record struct Coordinate(int col, int row);
 
 public class Player {
     public bool alive { get; set; } = true;
     public bool hasWon { get; set; } = false;
     public bool activateFount { get; set; } = false;
     public bool nightVision { get; set; } 
-    public int moveNum { get; set; } = 0;
     public int maxMove { get; set; } = 6;
     public int numArrows { get; set; } = 5;
     public Coordinate coord { get; set; }
     public Player(Coordinate coord) {
         this.coord = coord;
     }
-    public PlayerCommand?[] Command { get; } = new PlayerCommand?[12];
+    public List<PlayerCommand> Command { get; } = new List<PlayerCommand>();
     public void Run() {
-        foreach (PlayerCommand? command in Command) {
-            command?.Run(this);
+        if (Command is not null) {
+            foreach (PlayerCommand? command in Command) {
+                command?.Run(this);
+            }
+            Command.Clear();
+        } else {
+            Console.WriteLine("NULL!");
+            Console.ReadKey(true);
         }
-        Array.Clear(Command, 0, Command.Length);
-        moveNum++;
     }
     public char Icon() {
         return '@';
@@ -304,54 +311,31 @@ public abstract class Monster : IObstacle {
 public abstract class PlayerCommand {
     public abstract void Run(Player player);
 }
-public class NorthCommand : PlayerCommand {
-    public override void Run(Player player) {
-        if (player.alive) {
-            Coordinate coord2 = player.coord;
-            coord2.row--;
-            if (coord2.row >= 0 && coord2.row < player.maxMove) {
-                player.coord = coord2;
-            } else {
-                Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey(true);
-            }
-        }
+public class MoveCommand : PlayerCommand {
+    public char direction { get; set; }
+    public MoveCommand(char direction) {
+        this.direction = direction;
     }
-}
-public class SouthCommand : PlayerCommand {
     public override void Run(Player player) {
         if (player.alive) {
             Coordinate coord2 = player.coord;
-            coord2.row++;
-            if (coord2.row >= 0 && coord2.row < player.maxMove) {
-                player.coord = coord2;
-            } else {
-                Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey(true);
+            switch (direction) {
+                case 'w':  // north
+                    coord2.row--;
+                    break;
+                case 'a':  // west
+                    coord2.col--;
+                    break;
+                case 's':  // south
+                    coord2.row++;
+                    break;
+                case 'd':  // east
+                    coord2.col++;
+                    break;
+                default: 
+                    break;
             }
-        }
-    }
-}
-public class EastCommand : PlayerCommand {
-    public override void Run(Player player) {
-        if (player.alive) {
-            Coordinate coord2 = player.coord;
-            coord2.col++;
-            if (coord2.col >= 0 && coord2.col < player.maxMove) {
-                player.coord = coord2;
-            } else {
-                Console.WriteLine("You cannot go through a wall! (press any key)");
-                Console.ReadKey(true);
-            }
-        }
-    }
-}
-public class WestCommand : PlayerCommand {
-    public override void Run(Player player) {
-        if (player.alive) {
-            Coordinate coord2 = player.coord;
-            coord2.col--;
-            if (coord2.col >= 0 && coord2.col < player.maxMove) {
+            if (coord2.col >= 0 && coord2.col < player.maxMove && coord2.row >= 0 && coord2.row < player.maxMove) {
                 player.coord = coord2;
             } else {
                 Console.WriteLine("You cannot go through a wall! (press any key)");
@@ -376,11 +360,10 @@ public class EnableCommand : PlayerCommand {
 
     public override void Run(Player player) {
         if (player.alive && !player.activateFount) {
-            if (player.coord.row == obstacle.coord.row && player.coord.col == obstacle.coord.col) {
+            if (player.coord.col == obstacle.coord.col && player.coord.row == obstacle.coord.row) {
                 player.activateFount = true;
             } else {
                 Console.WriteLine("You can only do that at the fountain...");
-                Console.WriteLine("Press any key...");
                 Console.ReadKey(true);
             }
         }
@@ -396,14 +379,13 @@ public class HelpCommand : PlayerCommand {
     }
 }
 public class ShootArrow : PlayerCommand {
-    IObstacle[] obstacle { get; set; }
-    public ShootArrow(IObstacle[] obstacle) {
+    List<IObstacle> obstacle { get; set; }
+    public ShootArrow(List<IObstacle> obstacle) {
         this.obstacle = obstacle;
     }
     public override void Run(Player player) {
         if (player.numArrows > 0) {
             char inKey;
-            Monster testLife;
             int hitIndex = -1;
             ColorWriter.ColorWriteLine($"Type a key to pick a direction to shoot -> w: north, a: west, s: south, d: east", ConsoleColor.White);
             player.numArrows--;
@@ -414,57 +396,37 @@ public class ShootArrow : PlayerCommand {
             switch (inKey) {
                 case 'w':
                     Console.WriteLine("You fire an arrow to the north");
-                    for (int i = 0; i < obstacle.Length; i++) { 
+                    for (int i = 0; i < obstacle.Count; i++) { 
                         if (player.coord.col == obstacle[i].coord.col && player.coord.row - obstacle[i].coord.row == 1) {
-                            if (obstacle[i] is Monster) {
-                                testLife = (Monster)obstacle[i];
-                                if (testLife.alive) {
-                                    hitIndex = i;
-                                    break;
-                                }
-                            }
+                            hitIndex  = i;
+                            break;
                         }
                     }
                     break;
                 case 'a':
                     Console.WriteLine("You fire an arrow to the west");
-                    for (int i = 0; i < obstacle.Length; i++) {
+                    for (int i = 0; i < obstacle.Count; i++) {
                         if (player.coord.row == obstacle[i].coord.row && player.coord.col - obstacle[i].coord.col == 1) {
-                            if (obstacle[i] is Monster) {
-                                testLife = (Monster)obstacle[i];
-                                if (testLife.alive) {
-                                    hitIndex = i;
-                                    break;
-                                }
-                            }
+                            hitIndex = i;
+                            break;
                         }
                     }
                     break;
                 case 's':
                     Console.WriteLine("You fire an arrow to the south");
-                    for (int i = 0; i < obstacle.Length; i++) {
+                    for (int i = 0; i < obstacle.Count; i++) {
                         if (player.coord.col == obstacle[i].coord.col && player.coord.row - obstacle[i].coord.row == -1) {
-                            if (obstacle[i] is Monster) {
-                                testLife = (Monster)obstacle[i];
-                                if (testLife.alive) {
-                                    hitIndex = i;
-                                    break;
-                                }
-                            }
+                            hitIndex = i;
+                            break;
                         }
                     }
                     break;
                 case 'd':
                     Console.WriteLine("You fire an arrow to the east");
-                    for (int i = 0; i < obstacle.Length; i++) {
+                    for (int i = 0; i < obstacle.Count; i++) {
                         if (player.coord.row == obstacle[i].coord.row && player.coord.col - obstacle[i].coord.col == -1) {
-                            if (obstacle[i] is Monster) {
-                                testLife = (Monster)obstacle[i];
-                                if (testLife.alive) {
-                                    hitIndex = i;
-                                    break;
-                                }
-                            }
+                            hitIndex = i;
+                            break;
                         }
                     }
                     break;
@@ -473,10 +435,8 @@ public class ShootArrow : PlayerCommand {
             };
             if (hitIndex >= 0) {
                 if (obstacle[hitIndex] is Monster) {
-                    testLife = (Monster)obstacle[hitIndex];
-                    testLife.alive = false;
-                    obstacle[hitIndex] = testLife;
                     ColorWriter.ColorWriteLine($"You killed a {obstacle[hitIndex].GetType()}", ConsoleColor.Magenta);
+                    obstacle.RemoveAt(hitIndex);
                     Console.ReadKey(true);
                 } else {
                     ColorWriter.ColorWriteLine("Your arrow flies down into a deep pit", ConsoleColor.DarkCyan);
@@ -488,7 +448,7 @@ public class ShootArrow : PlayerCommand {
             }
 
         } else {
-            ColorWriter.ColorWriteLine("You are out of arrows! (press any key)", ConsoleColor.DarkBlue);
+            ColorWriter.ColorWriteLine("You are out of arrows!", ConsoleColor.DarkBlue);
             Console.ReadKey(true);
         }
     }
@@ -508,29 +468,29 @@ public class Maelstrom : Monster {
             ColorWriter.ColorWriteLine("You have encountered a maelstrom and have been swept away to another room!", ConsoleColor.Cyan);
             Coordinate coordM = this.coord;
             Coordinate coordP = player.coord;
-            coordP.row += 2;
-            if (coordP.row >= player.maxMove) { 
-                coordP.row = player.maxMove - 1;
-            } else if (coordP.row < 0) {
-                coordP.row = 0;
-            }
             coordP.col += 2;
             if (coordP.col >= player.maxMove) {
                 coordP.col = player.maxMove - 1;
             } else if (coordP.col < 0) {
                 coordP.col = 0;
             }
-            coordM.row -= 2;
-            if (coordM.row >= player.maxMove) {
-                coordM.row = player.maxMove - 1;
-            } else if (coordM.row < 0) {
-                coordM.row = 0;
+            coordP.row += 2;
+            if (coordP.row >= player.maxMove) { 
+                coordP.row = player.maxMove - 1;
+            } else if (coordP.row < 0) {
+                coordP.row = 0;
             }
             coordM.col -= 2;
             if (coordM.col >= player.maxMove) {
                 coordM.col = player.maxMove - 1;
             } else if (coordM.col < 0) {
                 coordM.col = 0;
+            }
+            coordM.row -= 2;
+            if (coordM.row >= player.maxMove) {
+                coordM.row = player.maxMove - 1;
+            } else if (coordM.row < 0) {
+                coordM.row = 0;
             }
 
             this.coord = coordM;
