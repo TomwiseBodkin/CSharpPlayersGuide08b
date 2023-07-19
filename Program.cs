@@ -10,7 +10,7 @@ public class Game {
         char inKey; // movement input key
         int FountInt;
 
-        Coordinate pCoord = new Coordinate(0,0);
+        Coordinate pCoord = new Coordinate(0, 0);
         Player player = new Player(pCoord);
 
         CheckGrid checkGrid = new CheckGrid(player);
@@ -23,8 +23,8 @@ public class Game {
             ColorWriter.ColorWriteLine($"You are in the room at [{player.coord.col},{player.coord.row}]. You have {player.numArrows} arrows.", ConsoleColor.Cyan);
             checkGrid.grid.DrawArray(player, checkGrid.Obstacles);
 
-            if (!checkGrid.CheckSurroundings()) { 
-                continue; 
+            if (!checkGrid.CheckSurroundings()) {
+                continue;
             }
             FountInt = checkGrid.Obstacles.FindIndex(r => r is Fountain);
 
@@ -62,22 +62,18 @@ public class Grid {
         Console.WriteLine("2 - 9x9");
         Console.WriteLine("3 - 12x12");
         do {
-            ColorWriter.ColorWrite("Your choice (1-3): ", ConsoleColor.White);
-            pickerStr = Console.ReadLine();
-            if (pickerStr == "")
-                pickerStr = "3";
-            while (!int.TryParse(pickerStr, out pick)) {
+            do {
                 ColorWriter.ColorWrite("Your choice (1-3): ", ConsoleColor.White);
                 pickerStr = Console.ReadLine();
                 if (pickerStr == "")
                     pickerStr = "3";
-            }
+            } while (!int.TryParse(pickerStr, out pick));
         } while (pick < 1 || pick > 3);
 
         switch (pick) {
             case 1:
                 gridSize = 6;
-                break; 
+                break;
             case 2:
                 gridSize = 9;
                 break;
@@ -91,9 +87,9 @@ public class Grid {
         Console.Clear();
     }
     public void DrawArray(Player player, List<IObstacle> obstacle) {
-        char[,] IconLocations = new char[gridSize,gridSize];
+        char[,] IconLocations = new char[gridSize, gridSize];
         Monster testLife;
-        ConsoleColor[,] consoleColors = new ConsoleColor[gridSize,gridSize]; 
+        ConsoleColor[,] consoleColors = new ConsoleColor[gridSize, gridSize];
 
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
@@ -158,19 +154,19 @@ public class CheckGrid {
         player.maxMove = grid.gridSize;
 
         Random random = new Random();
-        Array values = Enum.GetValues(typeof(Impediments));
+        Array impedTypes = Enum.GetValues(typeof(Impediments));
         bool repeat;
 
         Coordinate coordinate;
 
         Player = player;
         List<IObstacle> _Obstacles = new List<IObstacle>();
-        coordinate = new Coordinate(0,0);
+        coordinate = new Coordinate(0, 0);
         _Obstacles.Add(new Entrance(coordinate));
         coordinate = new Coordinate(random.Next(grid.gridSize / 2, grid.gridSize), random.Next(grid.gridSize / 2, grid.gridSize));
         _Obstacles.Add(new Fountain(coordinate));
-        for (int i = 2; i < grid.gridSize+2; i++) {
-                repeat = false;
+        for (int i = 2; i < grid.gridSize + 2; i++) {
+            repeat = false;
             do {
                 // Initialize locations of obstacles: Maelstrom, Amarok, Pit
                 // ensure they are not created at the same space
@@ -182,7 +178,7 @@ public class CheckGrid {
                     }
                 }
             } while (repeat);
-            switch (values.GetValue(random.Next(values.Length))) {
+            switch (impedTypes.GetValue(random.Next(impedTypes.Length))) {
                 case Impediments.Maelstrom:
                     _Obstacles.Add(new Maelstrom(coordinate));
                     break;
@@ -239,8 +235,8 @@ public class CheckGrid {
                     return false;
             }
         }
-        if (!Player.alive) { 
-            return false; 
+        if (!Player.alive) {
+            return false;
         } else {
             return true;
         }
@@ -268,7 +264,7 @@ public class Player {
     public bool alive { get; set; } = true;
     public bool hasWon { get; set; } = false;
     public bool activateFount { get; set; } = false;
-    public bool nightVision { get; set; } 
+    public bool nightVision { get; set; }
     public int maxMove { get; set; } = 6;
     public int numArrows { get; set; } = 5;
     public Coordinate coord { get; set; }
@@ -290,8 +286,8 @@ public class Player {
     public char Icon() {
         return '@';
     }
-    public ConsoleColor Color() { 
-        return ConsoleColor.Green; 
+    public ConsoleColor Color() {
+        return ConsoleColor.Green;
     }
 }
 
@@ -339,7 +335,7 @@ public class MoveCommand : PlayerCommand {
                 case 'd':  // east
                     coord2.col++;
                     break;
-                default: 
+                default:
                     break;
             }
             if (coord2.col >= 0 && coord2.col < player.maxMove && coord2.row >= 0 && coord2.row < player.maxMove) {
@@ -403,9 +399,9 @@ public class ShootArrow : PlayerCommand {
             switch (inKey) {
                 case 'w':
                     Console.WriteLine("You fire an arrow to the north");
-                    for (int i = 0; i < obstacle.Count; i++) { 
+                    for (int i = 0; i < obstacle.Count; i++) {
                         if (player.coord.col == obstacle[i].coord.col && player.coord.row - obstacle[i].coord.row == 1) {
-                            hitIndex  = i;
+                            hitIndex = i;
                             break;
                         }
                     }
@@ -445,12 +441,21 @@ public class ShootArrow : PlayerCommand {
                     ColorWriter.ColorWriteLine($"You killed a {obstacle[hitIndex].GetType()}", ConsoleColor.Magenta);
                     obstacle.RemoveAt(hitIndex);
                     Console.ReadKey(true);
-                } else {
+                } else if (obstacle[hitIndex] is Pit) {
                     ColorWriter.ColorWriteLine("Your arrow flies down into a deep pit", ConsoleColor.DarkCyan);
+                    Console.ReadKey(true);
+                } else if (obstacle[hitIndex] is Fountain) {
+                    ColorWriter.ColorWriteLine("You hear a splash", ConsoleColor.DarkCyan);
+                    Console.ReadKey(true);
+                } else if (obstacle[hitIndex] is Entrance) {
+                    ColorWriter.ColorWriteLine("Your arrow flies away, out of the cave, and to a new life", ConsoleColor.DarkCyan);
+                    Console.ReadKey(true);
+                } else {
+                    ColorWriter.ColorWriteLine("Your arrow hit something, but we're not sure what", ConsoleColor.DarkCyan);
                     Console.ReadKey(true);
                 }
             } else {
-                ColorWriter.ColorWriteLine("Your arrow flies off into the darkness...",ConsoleColor.DarkCyan);
+                ColorWriter.ColorWriteLine("Your arrow flies off into the darkness...", ConsoleColor.DarkCyan);
                 Console.ReadKey(true);
             }
 
@@ -482,7 +487,7 @@ public class Maelstrom : Monster {
                 coordP.col = 0;
             }
             coordP.row += 2;
-            if (coordP.row >= player.maxMove) { 
+            if (coordP.row >= player.maxMove) {
                 coordP.row = player.maxMove - 1;
             } else if (coordP.row < 0) {
                 coordP.row = 0;
@@ -514,7 +519,7 @@ public class Maelstrom : Monster {
 }
 
 public class Pit : IObstacle {
-    public Pit (Coordinate coord) {
+    public Pit(Coordinate coord) {
         this.coord = coord;
     }
 
@@ -577,7 +582,7 @@ public class Fountain : IObstacle {
     }
 }
 
-public class Amarok : Monster { 
+public class Amarok : Monster {
     public Amarok(Coordinate coord) {
         this.coord = coord;
     }
@@ -601,7 +606,7 @@ public class Amarok : Monster {
 }
 
 public static class Instructions {
-    public static void Printout () {
+    public static void Printout() {
         string instOut = """
         You enter the Cavern of Objects, a maze filled with dangerous pits and monsters, in search of 
         the Fountain of Objects. Light is visible only in the entrance, and no other light is seen 
@@ -625,7 +630,7 @@ public static class Instructions {
     }
 }
 
-public static class ColorWriter { 
+public static class ColorWriter {
     public static void ColorWriteLine(string LineOut, ConsoleColor Color) {
         Console.ForegroundColor = Color;
         Console.WriteLine(LineOut);
