@@ -216,7 +216,7 @@ public class CheckGrid {
                             if (Obstacles[i].coord.col == Obstacles[j].coord.col && Obstacles[i].coord.row == Obstacles[j].coord.row) {
                                 ColorWriter.ColorWriteLine($"A Maelstrom has died at [{Obstacles[i].coord.col.ToString()},{Obstacles[i].coord.row.ToString()}]", ConsoleColor.DarkRed);
                                 ColorWriter.ColorWriteLine($"Killed by a {Obstacles[j].ToString()}", ConsoleColor.DarkRed);
-                                Obstacles.RemoveAt(i);
+                                Obstacles.RemoveAt(i--);
                                 break;
                             }
                         }
